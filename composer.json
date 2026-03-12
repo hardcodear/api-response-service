@@ -1,0 +1,60 @@
+{
+    "name": "hardcodear/api-response-service",
+    "description": "Servicio para formatear respuestas JSON en Laravel",
+    "type": "library",
+    "homepage": "https://github.com/hardcodear/api-response-service",
+    "license": "MIT",
+    "keywords": [
+        "api",
+        "response",        
+        "laravel",
+        "json",
+        "php",
+        "restful",
+        "RESTful API"
+    ],
+    "authors": [
+      {
+        "name": "Ricardo II",
+        "email": "ricardobazan@hardcode.ar",
+        "role": "Creator & Maintainer"
+      }
+    ],
+    "autoload": {
+      "psr-4": {
+        "Hardcodear\\ApiResponseService\\": "src/"
+      },
+      "files": [
+        "src/helpers.php"
+      ]
+    },
+    "autoload-dev": {
+      "psr-4": {
+        "Hardcodear\\ApiResponseService\\Tests\\": "tests/"
+      }
+    },
+    "extra": {
+      "laravel": {
+        "providers": [
+          "Hardcodear\\ApiResponseService\\Providers\\ApiResponseServiceProvider"
+        ],
+        "aliases": {
+          "apiresponse": "Hardcodear\\ApiResponseService\\Facades\\ApiResponse"
+        }
+      }
+    },
+    "require": {
+      "php": "^8.2",
+      "illuminate/support": "^12.0",
+      "illuminate/http": "^12.0",
+      "illuminate/auth": "^12.0"
+    },
+    "require-dev": {
+      "orchestra/testbench": "^10.0",
+      "phpunit/phpunit": "^11.0"
+    },
+    "scripts": {
+      "test": "vendor/bin/phpunit"
+    }
+  }
+  
