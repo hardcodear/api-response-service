@@ -263,7 +263,7 @@ El repositorio también ejecuta tests automáticamente en GitHub Actions para `p
 ## 🧑 Autor
 
 Ricardo Bazán  
-Argentina, 2025  
+Argentina, 2026  
 Repositorio interno: [https://github.com/hardcodear/api-response-service](https://github.com/hardcodear/api-response-service)
 
 ---
