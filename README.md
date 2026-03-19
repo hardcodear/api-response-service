@@ -6,7 +6,7 @@
 [![License](https://img.shields.io/packagist/l/hardcodear/api-response-service)](https://packagist.org/packages/hardcodear/api-response-service)
 [![CI](https://github.com/hardcodear/api-response-service/actions/workflows/tests.yml/badge.svg)](https://github.com/hardcodear/api-response-service/actions/workflows/tests.yml)
 
-**Paquete Laravel 12+ para formatear respuestas JSON de forma estandarizada.**
+**Paquete Laravel 12+ (incluye Laravel 13) para formatear respuestas JSON de forma estandarizada.**
 
 Este paquete proporciona una forma consistente de estructurar las respuestas JSON para APIs Laravel, siguiendo un formato uniforme para respuestas exitosas y de error.
 
@@ -15,7 +15,7 @@ Este paquete proporciona una forma consistente de estructurar las respuestas JSO
 ## ✅ Compatibilidad
 
 - PHP `8.2+`
-- Laravel `12+`
+- Laravel `12+` (incluye `13`)
 
 ---
 
@@ -223,15 +223,15 @@ Intercepta excepciones comunes y devuelve respuestas formateadas como:
 
 Las excepciones manejadas por defecto son:
 
-* AccessDeniedHttpException → 401 Unauthorized
-* NotFoundHttpException → 404 Not Found
-* TooManyRequestsHttpException → 429 Too Many Requests
-* RouteNotFoundException → 401 Unauthorized
-* AuthenticationException → 401 Unauthorized
-* AuthorizationException → 403 Forbidden
-* MethodNotAllowedHttpException → 405 Method Not Allowed
-* ValidationException → 422 Unprocessable Entity
-* HttpExceptionInterface (fallback) → respeta el status HTTP en rutas API
+- AccessDeniedHttpException → 401 Unauthorized
+- NotFoundHttpException → 404 Not Found
+- TooManyRequestsHttpException → 429 Too Many Requests
+- RouteNotFoundException → 401 Unauthorized
+- AuthenticationException → 401 Unauthorized
+- AuthorizationException → 403 Forbidden
+- MethodNotAllowedHttpException → 405 Method Not Allowed
+- ValidationException → 422 Unprocessable Entity
+- HttpExceptionInterface (fallback) → respeta el status HTTP en rutas API
 
 ### ⚙️ Configuracion opcional (v1.1)
 
@@ -256,7 +256,16 @@ Ejecutar la suite localmente:
 composer test
 ```
 
-El repositorio también ejecuta tests automáticamente en GitHub Actions para `push` y `pull_request` con PHP `8.2` y `8.3`.
+El repositorio también ejecuta tests automáticamente en GitHub Actions para `push` y `pull_request` con PHP `8.2` y `8.3`, validando Laravel `12` y `13`.
+
+Matriz de CI actual:
+
+| PHP   | Laravel |
+| ----- | ------- |
+| `8.2` | `12`    |
+| `8.2` | `13`    |
+| `8.3` | `12`    |
+| `8.3` | `13`    |
 
 ---
 
