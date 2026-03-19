@@ -12,6 +12,7 @@ use Symfony\Component\HttpKernel\Exception\HttpExceptionInterface;
 use Symfony\Component\HttpKernel\Exception\AccessDeniedHttpException;
 use Symfony\Component\HttpKernel\Exception\MethodNotAllowedHttpException;
 use Symfony\Component\HttpKernel\Exception\NotFoundHttpException;
+use Symfony\Component\HttpKernel\Exception\ServiceUnavailableHttpException;
 use Symfony\Component\HttpKernel\Exception\TooManyRequestsHttpException;
 use Symfony\Component\Routing\Exception\RouteNotFoundException;
 
@@ -51,6 +52,10 @@ class ExceptionApiRegistrar
 
                 if ($e instanceof MethodNotAllowedHttpException) {
                     return apiresponse()->errorResponse(ApiResponseService::HTTP_METHOD_NOT_ALLOWED, self::message('method_not_allowed', 'Metodo HTTP no permitido para esta ruta'));
+                }
+
+                if ($e instanceof ServiceUnavailableHttpException) {
+                    return apiresponse()->errorResponse(ApiResponseService::HTTP_SERVICE_UNAVAILABLE, self::message('service_unavailable', 'El sistema se encuentra en mantenimiento'));
                 }
 
                 if ($e instanceof HttpExceptionInterface) {

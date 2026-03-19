@@ -15,6 +15,7 @@ use Symfony\Component\HttpKernel\Exception\HttpException;
 use Symfony\Component\HttpKernel\Exception\AccessDeniedHttpException;
 use Symfony\Component\HttpKernel\Exception\MethodNotAllowedHttpException;
 use Symfony\Component\HttpKernel\Exception\NotFoundHttpException;
+use Symfony\Component\HttpKernel\Exception\ServiceUnavailableHttpException;
 use Symfony\Component\HttpKernel\Exception\TooManyRequestsHttpException;
 use Symfony\Component\Routing\Exception\RouteNotFoundException;
 use Throwable;
@@ -146,6 +147,33 @@ class ExceptionApiRegistrarTest extends TestCase
 
         $this->assertInstanceOf(JsonResponse::class, $response);
         $this->assertSame(ApiResponseService::HTTP_FORBIDDEN, $response->getStatusCode());
+    }
+
+    public function test_bind_maps_service_unavailable_exception_to_503(): void
+    {
+        $renderer = null;
+
+        $exceptions = $this->getMockBuilder(Exceptions::class)
+            ->disableOriginalConstructor()
+            ->onlyMethods(['render'])
+            ->getMock();
+
+        $exceptions->expects($this->once())
+            ->method('render')
+            ->willReturnCallback(function (callable $callback) use (&$renderer) {
+                $renderer = $callback;
+
+                return null;
+            });
+
+        ExceptionApiRegistrar::bind($exceptions);
+
+        $request = Request::create('/api/status', 'GET');
+        $response = $renderer(new ServiceUnavailableHttpException(null, 'maintenance'), $request);
+
+        $this->assertInstanceOf(JsonResponse::class, $response);
+        $this->assertSame(ApiResponseService::HTTP_SERVICE_UNAVAILABLE, $response->getStatusCode());
+        $this->assertSame(ApiResponseService::HTTP_SERVICE_UNAVAILABLE, $response->getData(true)['status']);
     }
 
     public function test_bind_maps_generic_http_exception_status_for_api_routes(): void

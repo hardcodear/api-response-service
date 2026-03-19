@@ -16,5 +16,6 @@ return [
         'authorization' => 'No autorizado para este recurso',
         'client_error' => 'Error en la solicitud',
         'server_error' => 'Error interno del servidor',
+        'service_unavailable' => 'El sistema se encuentra en mantenimiento',
     ],
 ];

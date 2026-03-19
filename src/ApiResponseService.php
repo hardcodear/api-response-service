@@ -16,6 +16,7 @@ class ApiResponseService
     public const HTTP_INTERNAL_SERVER_ERROR = 500;
     public const HTTP_TOO_MANY_REQUESTS = 429;
     public const HTTP_METHOD_NOT_ALLOWED = 405;
+    public const HTTP_SERVICE_UNAVAILABLE = 503;
 
     public function successResponse(int $status = self::HTTP_OK, ?string $message = null, mixed $data = null): JsonResponse
     {
