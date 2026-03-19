@@ -256,14 +256,13 @@ Ejecutar la suite localmente:
 composer test
 ```
 
-El repositorio también ejecuta tests automáticamente en GitHub Actions para `push` y `pull_request` con PHP `8.2` y `8.3`, validando Laravel `12` y `13`.
+El repositorio también ejecuta tests automáticamente en GitHub Actions para `push` y `pull_request` con PHP `8.2` y `8.3`, validando Laravel `12` y `13` en combinaciones compatibles.
 
 Matriz de CI actual:
 
 | PHP   | Laravel |
 | ----- | ------- |
 | `8.2` | `12`    |
-| `8.2` | `13`    |
 | `8.3` | `12`    |
 | `8.3` | `13`    |
 

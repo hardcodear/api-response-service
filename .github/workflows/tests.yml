@@ -12,12 +12,15 @@ jobs:
       matrix:
         php: ["8.2", "8.3"]
         laravel: ["12", "13"]
+        exclude:
+          - php: "8.2"
+            laravel: "13"
 
     name: PHP ${{ matrix.php }} · Laravel ${{ matrix.laravel }}
 
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
 
       - name: Setup PHP
         uses: shivammathur/setup-php@v2
