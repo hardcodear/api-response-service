@@ -11,11 +11,11 @@ Añadir al `composer.json` si no existe:
 
 ```json
 "require-dev": {
-    "orchestra/testbench": "^8.0|^9.0|^10.0",
-    "phpunit/phpunit": "^10.0|^11.0"
+    "orchestra/testbench": "^10.0|^11.0",
+    "phpunit/phpunit": "^11.0|^12.0|^13.0"
 },
 "scripts": {
-    "test": "vendor/bin/phpunit"
+    "test": "vendor/bin/phpunit --do-not-cache-result"
 }
 ```
 
@@ -24,7 +24,7 @@ Ejecutar tests:
 ```bash
 composer test
 # o directamente:
-vendor/bin/phpunit
+vendor/bin/phpunit --do-not-cache-result
 ```
 
 ## Estructura de Archivos
@@ -33,10 +33,13 @@ vendor/bin/phpunit
 tests/
   Unit/
     ApiResponseServiceTest.php       # Métodos de respuesta de ApiResponseService
-    ExceptionApiRegistrarTest.php # Binding de excepciones HTTP
   Feature/
-    ApiResponseIntegrationTest.php # Integración con rutas /api/*
-  TestCase.php                    # Base con bootstrapping de Orchestra Testbench
+    ExceptionApiRegistrarTest.php    # Binding de excepciones HTTP
+  Contract/
+    ResponseShapeTest.php            # Contrato estable de respuestas JSON
+  Regression/
+    NullOmissionTest.php             # Omisión de valores nulos
+  TestCase.php                       # Base con bootstrapping de Orchestra Testbench
 ```
 
 ## TestCase Base
@@ -91,7 +94,7 @@ $this->assertArrayNotHasKey('errors', $data);
 | `unauthorized()`    | status=401                                      |
 | `serverError()`     | status=500                                      |
 | `successResponse()` | status HTTP personalizado, `data` condicional   |
-| `errorResponse()`   | status HTTP personalizado, `errors` condicional |
+| `errorResponse()`   | status HTTP, `errors` condicional y headers      |
 
 ## Reglas
 
@@ -100,3 +103,6 @@ $this->assertArrayNotHasKey('errors', $data);
 - No mockear `ApiResponseService` en sus propios tests unitarios — probar la clase real.
 - Los campos `data` y `errors` **no deben aparecer** cuando se pasan como `null`.
 - Probar tanto arrays indexados como asociativos en `$data` y `$errors`.
+- Un array de errores vacío debe permanecer como `[]`.
+- Las excepciones deben conservar headers como `Allow` y `Retry-After`.
+- Los errores 5xx deben conservar el status sin exponer mensajes internos.

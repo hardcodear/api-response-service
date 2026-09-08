@@ -1,7 +1,7 @@
 # ApiResponse — Instrucciones del Proyecto
 
 Paquete Laravel para estandarizar respuestas JSON en APIs REST.
-**Paquete**: `hardcodear/api-response-service` · **Namespace**: `Hardcodear\ApiResponseService` · **PHP 8.2+** · **Laravel 12+**
+**Paquete**: `hardcodear/api-response-service` · **Namespace**: `Hardcodear\ApiResponseService` · **PHP 8.2+** · **Laravel 12 y 13**
 
 ## Arquitectura
 
@@ -38,8 +38,10 @@ Los campos `data` y `errors` se omiten si son `null`.
 - **Type hints completos**: `mixed`, `int`, `?string`, return types declarados en todos los métodos públicos.
 - **Constantes para códigos HTTP**: Usar `self::HTTP_OK`, `self::HTTP_NOT_FOUND`, etc. — nunca números mágicos.
 - **Métodos de conveniencia**: `success()`, `error()`, `notFound()`, `validation()`, `forbidden()`, `unauthorized()`, `serverError()` delegan a `successResponse()` / `errorResponse()`.
+- **Headers HTTP**: `errorResponse()` acepta headers opcionales y el registrador preserva los headers de excepciones Symfony.
+- **Arrays de errores**: usar `array_is_list()`; los arrays asociativos se envuelven y los arrays vacíos se conservan como `[]`.
 - **PSR-4 + PSR-12**: Indentación de 4 espacios, sin tabs.
-- **Lógica interna privada**: Helpers como `isAssociativeArray()` son `private`.
+- **Mensajes 5xx seguros**: conservar el status original sin exponer el mensaje interno de la excepción.
 
 ## Instalación / Builds
 
@@ -51,18 +53,23 @@ composer install
 composer require hardcodear/api-response-service
 ```
 
-No hay suite de tests configurada actualmente. Al añadir tests, usar PHPUnit con `require-dev`.
+La suite de tests usa PHPUnit y Orchestra Testbench mediante `require-dev`. Laravel 12 se valida con Testbench 10 y Laravel 13 con Testbench 11.
 
 ## Excepciones Manejadas Automáticamente (rutas `/api/*`)
 
 | Excepción                       | Código HTTP |
 | ------------------------------- | ----------- |
-| `AccessDeniedHttpException`     | 401         |
+| `AccessDeniedHttpException`     | 403         |
 | `NotFoundHttpException`         | 404         |
 | `TooManyRequestsHttpException`  | 429         |
 | `RouteNotFoundException`        | 401         |
 | `AuthenticationException`       | 401         |
+| `AuthorizationException`        | 403         |
 | `MethodNotAllowedHttpException` | 405         |
+| `ValidationException`           | 422         |
+| `ServiceUnavailableHttpException` | 503       |
+
+Los headers de la excepción (`Allow`, `Retry-After`, etc.) deben conservarse.
 
 ## Patrones a Evitar
 

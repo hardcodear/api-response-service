@@ -42,12 +42,10 @@ class ExceptionApiRegistrarTest extends TestCase
         ExceptionApiRegistrar::bind($exceptions);
 
         $cases = [
-            [new AccessDeniedHttpException('denied'), ApiResponseService::HTTP_UNAUTHORIZED],
+            [new AccessDeniedHttpException('denied'), ApiResponseService::HTTP_FORBIDDEN],
             [new NotFoundHttpException('not found'), ApiResponseService::HTTP_NOT_FOUND],
-            [new TooManyRequestsHttpException(null, 'too many'), ApiResponseService::HTTP_TOO_MANY_REQUESTS],
             [new RouteNotFoundException('route missing'), ApiResponseService::HTTP_UNAUTHORIZED],
             [new AuthenticationException('auth'), ApiResponseService::HTTP_UNAUTHORIZED],
-            [new MethodNotAllowedHttpException([], 'method'), ApiResponseService::HTTP_METHOD_NOT_ALLOWED],
         ];
 
         foreach ($cases as [$exception, $expectedStatus]) {
@@ -169,11 +167,42 @@ class ExceptionApiRegistrarTest extends TestCase
         ExceptionApiRegistrar::bind($exceptions);
 
         $request = Request::create('/api/status', 'GET');
-        $response = $renderer(new ServiceUnavailableHttpException(null, 'maintenance'), $request);
+        $response = $renderer(new ServiceUnavailableHttpException(120, 'maintenance'), $request);
 
         $this->assertInstanceOf(JsonResponse::class, $response);
         $this->assertSame(ApiResponseService::HTTP_SERVICE_UNAVAILABLE, $response->getStatusCode());
         $this->assertSame(ApiResponseService::HTTP_SERVICE_UNAVAILABLE, $response->getData(true)['status']);
+        $this->assertSame('120', $response->headers->get('Retry-After'));
+    }
+
+    public function test_bind_preserves_headers_for_rate_limits_and_method_not_allowed(): void
+    {
+        $renderer = null;
+
+        $exceptions = $this->getMockBuilder(Exceptions::class)
+            ->disableOriginalConstructor()
+            ->onlyMethods(['render'])
+            ->getMock();
+
+        $exceptions->expects($this->once())
+            ->method('render')
+            ->willReturnCallback(function (callable $callback) use (&$renderer) {
+                $renderer = $callback;
+
+                return null;
+            });
+
+        ExceptionApiRegistrar::bind($exceptions);
+
+        $request = Request::create('/api/users', 'POST');
+
+        $rateLimitResponse = $renderer(new TooManyRequestsHttpException(60, 'too many'), $request);
+        $methodResponse = $renderer(new MethodNotAllowedHttpException(['GET', 'HEAD'], 'method'), $request);
+
+        $this->assertSame(ApiResponseService::HTTP_TOO_MANY_REQUESTS, $rateLimitResponse->getStatusCode());
+        $this->assertSame('60', $rateLimitResponse->headers->get('Retry-After'));
+        $this->assertSame(ApiResponseService::HTTP_METHOD_NOT_ALLOWED, $methodResponse->getStatusCode());
+        $this->assertSame('GET, HEAD', $methodResponse->headers->get('Allow'));
     }
 
     public function test_bind_maps_generic_http_exception_status_for_api_routes(): void
@@ -196,11 +225,73 @@ class ExceptionApiRegistrarTest extends TestCase
         ExceptionApiRegistrar::bind($exceptions);
 
         $request = Request::create('/api/teapot', 'GET');
-        $response = $renderer(new HttpException(418, 'Teapot'), $request);
+        $response = $renderer(new HttpException(418, 'Teapot', null, ['X-Test' => 'preserved']), $request);
 
         $this->assertInstanceOf(JsonResponse::class, $response);
         $this->assertSame(418, $response->getStatusCode());
         $this->assertSame(418, $response->getData(true)['status']);
         $this->assertSame('Teapot', $response->getData(true)['message']);
+        $this->assertSame('preserved', $response->headers->get('X-Test'));
+    }
+
+    public function test_bind_preserves_generic_server_status_and_hides_internal_message(): void
+    {
+        $renderer = null;
+
+        $exceptions = $this->getMockBuilder(Exceptions::class)
+            ->disableOriginalConstructor()
+            ->onlyMethods(['render'])
+            ->getMock();
+
+        $exceptions->expects($this->once())
+            ->method('render')
+            ->willReturnCallback(function (callable $callback) use (&$renderer) {
+                $renderer = $callback;
+
+                return null;
+            });
+
+        ExceptionApiRegistrar::bind($exceptions);
+
+        $request = Request::create('/api/upstream', 'GET');
+
+        foreach ([502, 504] as $status) {
+            $response = $renderer(new HttpException($status, 'Sensitive upstream detail', null, ['Retry-After' => '30']), $request);
+
+            $this->assertInstanceOf(JsonResponse::class, $response);
+            $this->assertSame($status, $response->getStatusCode());
+            $this->assertSame($status, $response->getData(true)['status']);
+            $this->assertSame('Error interno del servidor', $response->getData(true)['message']);
+            $this->assertSame('30', $response->headers->get('Retry-After'));
+            $this->assertStringNotContainsString('Sensitive', $response->getContent());
+        }
+    }
+
+    public function test_bind_uses_configured_api_patterns(): void
+    {
+        $renderer = null;
+
+        $exceptions = $this->getMockBuilder(Exceptions::class)
+            ->disableOriginalConstructor()
+            ->onlyMethods(['render'])
+            ->getMock();
+
+        $exceptions->expects($this->once())
+            ->method('render')
+            ->willReturnCallback(function (callable $callback) use (&$renderer) {
+                $renderer = $callback;
+
+                return null;
+            });
+
+        config()->set('apiresponse.api_patterns', ['internal/*']);
+        ExceptionApiRegistrar::bind($exceptions);
+
+        $this->assertNull($renderer(new NotFoundHttpException(), Request::create('/api/users', 'GET')));
+
+        $response = $renderer(new NotFoundHttpException(), Request::create('/internal/users', 'GET'));
+
+        $this->assertInstanceOf(JsonResponse::class, $response);
+        $this->assertSame(ApiResponseService::HTTP_NOT_FOUND, $response->getStatusCode());
     }
 }

@@ -66,6 +66,20 @@ class ApiResponseServiceTest extends TestCase
         $this->assertSame(['required', 'email'], $json['errors']);
     }
 
+    public function test_error_response_keeps_empty_array_errors_as_is(): void
+    {
+        $response = $this->service->errorResponse(422, 'Invalid', []);
+
+        $this->assertSame([], $response->getData(true)['errors']);
+    }
+
+    public function test_error_response_includes_custom_headers(): void
+    {
+        $response = $this->service->errorResponse(429, 'Retry later', headers: ['Retry-After' => '60']);
+
+        $this->assertSame('60', $response->headers->get('Retry-After'));
+    }
+
     public function test_error_response_omits_errors_when_null(): void
     {
         $response = $this->service->errorResponse();
