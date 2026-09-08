@@ -27,7 +27,11 @@ class ExceptionApiRegistrar
                 }
 
                 if ($e instanceof AccessDeniedHttpException) {
-                    return apiresponse()->unauthorized(self::message('access_denied', 'No tiene permiso para ejecutar esta API'));
+                    return apiresponse()->errorResponse(
+                        ApiResponseService::HTTP_FORBIDDEN,
+                        self::message('access_denied', 'No tiene permiso para ejecutar esta API'),
+                        headers: $e->getHeaders(),
+                    );
                 }
 
                 if ($e instanceof NotFoundHttpException) {
@@ -35,7 +39,11 @@ class ExceptionApiRegistrar
                 }
 
                 if ($e instanceof TooManyRequestsHttpException) {
-                    return apiresponse()->errorResponse(ApiResponseService::HTTP_TOO_MANY_REQUESTS, self::message('too_many_requests', 'Demasiadas peticiones'));
+                    return apiresponse()->errorResponse(
+                        ApiResponseService::HTTP_TOO_MANY_REQUESTS,
+                        self::message('too_many_requests', 'Demasiadas peticiones'),
+                        headers: $e->getHeaders(),
+                    );
                 }
 
                 if ($e instanceof RouteNotFoundException) {
@@ -51,11 +59,19 @@ class ExceptionApiRegistrar
                 }
 
                 if ($e instanceof MethodNotAllowedHttpException) {
-                    return apiresponse()->errorResponse(ApiResponseService::HTTP_METHOD_NOT_ALLOWED, self::message('method_not_allowed', 'Metodo HTTP no permitido para esta ruta'));
+                    return apiresponse()->errorResponse(
+                        ApiResponseService::HTTP_METHOD_NOT_ALLOWED,
+                        self::message('method_not_allowed', 'Metodo HTTP no permitido para esta ruta'),
+                        headers: $e->getHeaders(),
+                    );
                 }
 
                 if ($e instanceof ServiceUnavailableHttpException) {
-                    return apiresponse()->errorResponse(ApiResponseService::HTTP_SERVICE_UNAVAILABLE, self::message('service_unavailable', 'El sistema se encuentra en mantenimiento'));
+                    return apiresponse()->errorResponse(
+                        ApiResponseService::HTTP_SERVICE_UNAVAILABLE,
+                        self::message('service_unavailable', 'El sistema se encuentra en mantenimiento'),
+                        headers: $e->getHeaders(),
+                    );
                 }
 
                 if ($e instanceof HttpExceptionInterface) {
@@ -63,12 +79,17 @@ class ExceptionApiRegistrar
                     $message = $e->getMessage();
 
                     if ($status >= 500) {
-                        return apiresponse()->serverError(self::message('server_error', 'Error interno del servidor'));
+                        return apiresponse()->errorResponse(
+                            $status,
+                            self::message('server_error', 'Error interno del servidor'),
+                            headers: $e->getHeaders(),
+                        );
                     }
 
                     return apiresponse()->errorResponse(
                         $status,
-                        $message !== '' ? $message : self::message('client_error', 'Error en la solicitud')
+                        $message !== '' ? $message : self::message('client_error', 'Error en la solicitud'),
+                        headers: $e->getHeaders(),
                     );
                 }
             }

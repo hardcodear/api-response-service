@@ -3,7 +3,9 @@
 namespace Hardcodear\ApiResponseService\Tests\Unit;
 
 use Hardcodear\ApiResponseService\ApiResponseService;
+use Hardcodear\ApiResponseService\Providers\ApiResponseServiceProvider;
 use Hardcodear\ApiResponseService\Tests\TestCase;
+use Illuminate\Support\ServiceProvider;
 
 class ServiceProviderTest extends TestCase
 {
@@ -14,5 +16,19 @@ class ServiceProviderTest extends TestCase
 
         $this->assertInstanceOf(ApiResponseService::class, $first);
         $this->assertSame($first, $second);
+    }
+
+    public function test_default_configuration_is_merged(): void
+    {
+        $this->assertSame(['api', 'api/*'], config('apiresponse.api_patterns'));
+        $this->assertSame('Error interno del servidor', config('apiresponse.messages.server_error'));
+    }
+
+    public function test_configuration_can_be_published(): void
+    {
+        $paths = ServiceProvider::pathsToPublish(ApiResponseServiceProvider::class, 'apiresponse-config');
+
+        $this->assertNotEmpty($paths);
+        $this->assertContains(config_path('apiresponse.php'), array_values($paths));
     }
 }
