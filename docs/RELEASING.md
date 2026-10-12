@@ -8,12 +8,12 @@
 ```bash
 git switch main
 git pull --ff-only
-git tag -a v2.0.1 -m "Release v2.0.1"
-git push origin v2.0.1
+git tag -a v2.0.2 -m "Release v2.0.2"
+git push origin v2.0.2
 ```
 
 5. Comprobá en [Packagist](https://packagist.org/packages/hardcodear/api-response-service) que la versión y la referencia coincidan con el tag. El repositorio tiene un webhook de push; si la versión no aparece, revisá sus entregas y la actualización de Packagist.
-6. Instalá la versión publicada en una aplicación Laravel limpia mediante `composer require hardcodear/api-response-service:2.0.1 --prefer-dist`, y verificá el ejemplo del README y `php artisan vendor:publish --tag=apiresponse-config`.
+6. Instalá la versión publicada en una aplicación Laravel limpia mediante `composer require hardcodear/api-response-service:2.0.2 --prefer-dist` (reemplazá la versión por la que acabás de publicar), y verificá el ejemplo del README y `php artisan vendor:publish --tag=apiresponse-config`.
 
 La versión de Composer se infiere del tag: no agregues un campo `version` a `composer.json`. No publiques `vendor`, tests, scripts de CI ni credenciales. El archivo distribuible conserva `src`, `config`, `composer.json`, README y licencia.
 

@@ -4,6 +4,8 @@ Este paquete usa versionado semántico. Los tags publicados son inmutables.
 
 ## Unreleased
 
+## 2.0.1 — 2026-10-12
+
 - Instalación del paquete exportado en aplicaciones Laravel 12 y 13 nuevas dentro de CI.
 - Pruebas del kernel HTTP real para la integración de excepciones.
 - Check agregado `CI`, permisos de lectura explícitos y acciones fijadas por SHA.
