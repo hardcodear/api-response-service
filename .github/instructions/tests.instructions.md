@@ -15,7 +15,7 @@ Añadir al `composer.json` si no existe:
     "phpunit/phpunit": "^11.0|^12.0|^13.0"
 },
 "scripts": {
-    "test": "vendor/bin/phpunit --do-not-cache-result"
+    "test": "@php vendor/bin/phpunit"
 }
 ```
 
@@ -24,7 +24,7 @@ Ejecutar tests:
 ```bash
 composer test
 # o directamente:
-vendor/bin/phpunit --do-not-cache-result
+php vendor/bin/phpunit
 ```
 
 ## Estructura de Archivos
