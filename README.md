@@ -32,6 +32,16 @@ composer require hardcodear/api-response-service:^2.0
 
 Laravel detectará automáticamente el `ServiceProvider` y registrará el alias del facade `apiresponse` gracias al archivo `composer.json` del paquete.
 
+También podés importar el facade con su nombre completo:
+
+```php
+use Hardcodear\ApiResponseService\Facades\ApiResponse;
+
+return ApiResponse::success('Operación realizada', ['id' => 123]);
+```
+
+No requiere migraciones ni cambios en la base de datos. El manejo global de excepciones es opcional y se activa por separado.
+
 ---
 
 ## ⚡ Quick Start
@@ -63,7 +73,7 @@ class UserController
       return apiresponse()->validation('Datos inválidos', $errors);
     }
 
-    return apiresponse()->success('Usuario creado', ['id' => 123]);
+    return apiresponse()->successResponse(201, 'Usuario creado', ['id' => 123]);
   }
 }
 ```
@@ -156,6 +166,13 @@ apiresponse()->error(?string $message = null, mixed $errors = null): JsonRespons
 return apiresponse()->error('Error inesperado', ['detalle' => '...']);
 ```
 
+`success()` siempre responde con HTTP 200 y `error()` con HTTP 500. Para otros códigos, usá los métodos generales:
+
+```php
+return apiresponse()->successResponse(201, 'Creado', ['id' => 123]);
+return apiresponse()->errorResponse(429, 'Intentá más tarde', headers: ['Retry-After' => '60']);
+```
+
 ---
 
 ## 🧪 Estructura del JSON resultante
@@ -167,7 +184,7 @@ return apiresponse()->error('Error inesperado', ['detalle' => '...']);
   "status": 200,
   "message": "Mensaje opcional",
   "data": {
-    // contenido devuelto
+    "id": 123
   }
 }
 ```
@@ -179,7 +196,7 @@ return apiresponse()->error('Error inesperado', ['detalle' => '...']);
   "status": 500,
   "message": "Mensaje de error",
   "errors": [
-    // array de errores
+    { "email": ["El campo email es obligatorio."] }
   ]
 }
 ```
@@ -189,6 +206,8 @@ return apiresponse()->error('Error inesperado', ['detalle' => '...']);
 Los arrays indexados se conservan sin cambios. Los arrays asociativos se envuelven como un elemento de `errors`, y un array vacío se mantiene como `[]`.
 
 > Cuando `data` o `errors` son `null`, esas claves se omiten automáticamente del JSON.
+
+`message` siempre está presente y puede ser `null`. `status` coincide con el código HTTP real.
 
 ---
 
@@ -202,16 +221,30 @@ Esto te permite centralizar el manejo de errores en `bootstrap/app.php`, sin rep
 
 ### 🧱 Editar `bootstrap/app.php`
 
-Agregá el binding dentro de `withExceptions(...)` en `bootstrap/app.php`:
+Agregá el binding dentro del `withExceptions(...)` existente en `bootstrap/app.php`, antes de `create()`. Por ejemplo:
 
 ```php
 use Hardcodear\ApiResponseService\ExceptionApiRegistrar;
+use Illuminate\Foundation\Application;
 use Illuminate\Foundation\Configuration\Exceptions;
+use Illuminate\Foundation\Configuration\Middleware;
 
-$app->withExceptions(function (Exceptions $exceptions) {
-    ExceptionApiRegistrar::bind($exceptions);
-});
+return Application::configure(basePath: dirname(__DIR__))
+    ->withRouting(
+        web: __DIR__.'/../routes/web.php',
+        api: __DIR__.'/../routes/api.php',
+        commands: __DIR__.'/../routes/console.php',
+        health: '/up',
+    )
+    ->withMiddleware(function (Middleware $middleware): void {
+        // Conservá la configuración de middleware de tu aplicación.
+    })
+    ->withExceptions(function (Exceptions $exceptions): void {
+        ExceptionApiRegistrar::bind($exceptions);
+    })->create();
 ```
+
+Conservá las rutas y callbacks de tu aplicación; la línea necesaria es `ExceptionApiRegistrar::bind($exceptions)`. Si tu proyecto no tiene `routes/api.php`, crealo antes de añadirlo a `withRouting`.
 
 ### ⚙️ ¿Qué hace esto?
 
@@ -237,7 +270,9 @@ Las excepciones manejadas por defecto son:
 - ServiceUnavailableHttpException → 503 Service Unavailable
 - HttpExceptionInterface (fallback) → respeta el status HTTP en rutas API; los mensajes 5xx se reemplazan por un mensaje seguro
 
-Los headers definidos por la excepción, como `Allow` o `Retry-After`, se conservan en la respuesta JSON.
+Los headers `Allow` (405) y `Retry-After` (429 y 503), así como los del fallback HTTP, se conservan en la respuesta JSON.
+
+Las rutas fuera de `api_patterns` y las excepciones que no figuran en esta lista siguen siendo manejadas por Laravel. Por ejemplo, una `RuntimeException` conserva el manejo de errores de la aplicación.
 
 ### ⚙️ Configuración opcional
 
@@ -259,6 +294,7 @@ Archivo publicado: `config/apiresponse.php`
 Ejecutar la suite localmente:
 
 ```bash
+composer install
 composer test
 ```
 
@@ -277,6 +313,12 @@ Matriz de versiones recientes:
 | `8.5` | `13`    |
 
 Además, se prueban las dependencias mínimas declaradas para Laravel 12/PHP 8.2 y Laravel 13/PHP 8.3.
+
+CI también instala el archivo distribuible en aplicaciones Laravel 12 y 13 nuevas, sin las dependencias de desarrollo del paquete. Verifica autodiscovery, helper, facade y alias, publicación de configuración, `config:cache` y respuestas a través del kernel HTTP real. El check `CI` solo pasa si toda la matriz y ambas instalaciones pasan.
+
+Las dependencias de producción recientes se revisan con `composer audit`. La matriz de dependencias mínimas comprueba compatibilidad; para uso en producción, mantené actualizadas las dependencias de tu aplicación.
+
+Para contribuir, consultá [CONTRIBUTING.md](CONTRIBUTING.md). El historial está en [CHANGELOG.md](CHANGELOG.md), los reportes privados de seguridad en [SECURITY.md](SECURITY.md) y el proceso de releases en [docs/RELEASING.md](docs/RELEASING.md).
 
 ---
 

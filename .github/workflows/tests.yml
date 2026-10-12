@@ -3,10 +3,19 @@ name: Tests
 on:
   push:
   pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: tests-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
 
 jobs:
   phpunit:
     runs-on: ubuntu-latest
+    timeout-minutes: 15
     strategy:
       fail-fast: false
       matrix:
@@ -20,10 +29,12 @@ jobs:
 
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v7
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with:
+          persist-credentials: false
 
       - name: Setup PHP
-        uses: shivammathur/setup-php@v2
+        uses: shivammathur/setup-php@d52fc211a0436f8839a587b3b5b8efddab4744ea # v2
         with:
           php-version: ${{ matrix.php }}
           coverage: none
@@ -52,8 +63,12 @@ jobs:
       - name: Run test suite
         run: composer test
 
+      - name: Audit production dependencies
+        run: composer audit --locked --no-dev
+
   minimum-dependencies:
     runs-on: ubuntu-latest
+    timeout-minutes: 15
     strategy:
       fail-fast: false
       matrix:
@@ -67,10 +82,12 @@ jobs:
 
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v7
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with:
+          persist-credentials: false
 
       - name: Setup PHP
-        uses: shivammathur/setup-php@v2
+        uses: shivammathur/setup-php@d52fc211a0436f8839a587b3b5b8efddab4744ea # v2
         with:
           php-version: ${{ matrix.php }}
           coverage: none
@@ -98,3 +115,49 @@ jobs:
 
       - name: Run test suite
         run: composer test
+
+  consumer-install:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - php: "8.2"
+            laravel: "12"
+          - php: "8.3"
+            laravel: "13"
+    name: Consumer install · Laravel ${{ matrix.laravel }}
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with:
+          persist-credentials: false
+
+      - name: Setup PHP
+        uses: shivammathur/setup-php@d52fc211a0436f8839a587b3b5b8efddab4744ea # v2
+        with:
+          php-version: ${{ matrix.php }}
+          coverage: none
+
+      - name: Install exported package in a fresh Laravel application
+        env:
+          LARAVEL_VERSION: ${{ matrix.laravel }}
+        run: bash scripts/consumer-install.sh
+
+  ci:
+    name: CI
+    if: ${{ always() }}
+    needs: [phpunit, minimum-dependencies, consumer-install]
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Require every test and installation job to succeed
+        env:
+          PHPUNIT_RESULT: ${{ needs.phpunit.result }}
+          MINIMUM_RESULT: ${{ needs.minimum-dependencies.result }}
+          CONSUMER_RESULT: ${{ needs.consumer-install.result }}
+        run: |
+          test "$PHPUNIT_RESULT" = success
+          test "$MINIMUM_RESULT" = success
+          test "$CONSUMER_RESULT" = success
