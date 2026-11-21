@@ -4,7 +4,10 @@ Este paquete usa versionado semántico. Los tags publicados son inmutables.
 
 ## Unreleased
 
+## 2.0.2 — 2026-11-21
+
 - Las respuestas de error para solicitudes `HEAD` tienen el cuerpo vacío.
+- Las respuestas generadas a partir de excepciones 404 conservan headers como `Cache-Control`.
 - Las denegaciones de gates y policies sin un código explícito aplican el mensaje configurable `messages.authorization`.
 - Las excepciones de validación respetan su código HTTP y permiten que Laravel gestione las respuestas explícitas.
 
