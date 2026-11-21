@@ -4,6 +4,7 @@ namespace Hardcodear\ApiResponseService;
 
 use Illuminate\Foundation\Configuration\Exceptions;
 use Illuminate\Auth\Access\AuthorizationException;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Auth\AuthenticationException;
 use Illuminate\Validation\ValidationException;
@@ -20,82 +21,106 @@ class ExceptionApiRegistrar
 {
     public static function bind(Exceptions $exceptions): void
     {
-        $exceptions->render(function (Throwable $e, Request $request) {
-            if (self::shouldHandle($request)) {
-                if ($e instanceof ValidationException) {
-                    return apiresponse()->validation(self::message('validation', 'Error de validacion'), $e->errors());
-                }
-
-                if ($e instanceof AccessDeniedHttpException) {
-                    return apiresponse()->errorResponse(
-                        ApiResponseService::HTTP_FORBIDDEN,
-                        self::message('access_denied', 'No tiene permiso para ejecutar esta API'),
-                        headers: $e->getHeaders(),
-                    );
-                }
-
-                if ($e instanceof NotFoundHttpException) {
-                    return apiresponse()->notFound(self::message('not_found', 'URL no encontrada'));
-                }
-
-                if ($e instanceof TooManyRequestsHttpException) {
-                    return apiresponse()->errorResponse(
-                        ApiResponseService::HTTP_TOO_MANY_REQUESTS,
-                        self::message('too_many_requests', 'Demasiadas peticiones'),
-                        headers: $e->getHeaders(),
-                    );
-                }
-
-                if ($e instanceof RouteNotFoundException) {
-                    return apiresponse()->unauthorized(self::message('route_not_found', 'Token invalido o no enviado'));
-                }
-
-                if ($e instanceof AuthenticationException) {
-                    return apiresponse()->unauthorized(self::message('authentication', 'Token de autorizacion requerido o invalido'));
-                }
-
-                if ($e instanceof AuthorizationException) {
-                    return apiresponse()->forbidden(self::message('authorization', 'No autorizado para este recurso'));
-                }
-
-                if ($e instanceof MethodNotAllowedHttpException) {
-                    return apiresponse()->errorResponse(
-                        ApiResponseService::HTTP_METHOD_NOT_ALLOWED,
-                        self::message('method_not_allowed', 'Metodo HTTP no permitido para esta ruta'),
-                        headers: $e->getHeaders(),
-                    );
-                }
-
-                if ($e instanceof ServiceUnavailableHttpException) {
-                    return apiresponse()->errorResponse(
-                        ApiResponseService::HTTP_SERVICE_UNAVAILABLE,
-                        self::message('service_unavailable', 'El sistema se encuentra en mantenimiento'),
-                        headers: $e->getHeaders(),
-                    );
-                }
-
-                if ($e instanceof HttpExceptionInterface) {
-                    $status = $e->getStatusCode();
-                    $message = $e->getMessage();
-
-                    if ($status >= 500) {
-                        return apiresponse()->errorResponse(
-                            $status,
-                            self::message('server_error', 'Error interno del servidor'),
-                            headers: $e->getHeaders(),
-                        );
-                    }
-
-                    return apiresponse()->errorResponse(
-                        $status,
-                        $message !== '' ? $message : self::message('client_error', 'Error en la solicitud'),
-                        headers: $e->getHeaders(),
-                    );
-                }
+        $exceptions->render(function (Throwable $e, Request $request): ?JsonResponse {
+            if (! self::shouldHandle($request)) {
+                return null;
             }
 
-            return null;
+            return self::renderException($e)?->prepare($request);
         });
+    }
+
+    private static function renderException(Throwable $e): ?JsonResponse
+    {
+        if ($e instanceof ValidationException) {
+            if ($e->getResponse() !== null) {
+                return null;
+            }
+
+            return apiresponse()->errorResponse(
+                $e->status,
+                self::message('validation', 'Error de validacion'),
+                $e->errors(),
+            );
+        }
+
+        if ($e instanceof AccessDeniedHttpException) {
+            // Laravel wraps gate and policy denials before calling renderers.
+            $message = $e->getPrevious() instanceof AuthorizationException
+                ? self::message('authorization', 'No autorizado para este recurso')
+                : self::message('access_denied', 'No tiene permiso para ejecutar esta API');
+
+            return apiresponse()->errorResponse(
+                ApiResponseService::HTTP_FORBIDDEN,
+                $message,
+                headers: $e->getHeaders(),
+            );
+        }
+
+        if ($e instanceof NotFoundHttpException) {
+            return apiresponse()->errorResponse(
+                ApiResponseService::HTTP_NOT_FOUND,
+                self::message('not_found', 'URL no encontrada'),
+                headers: $e->getHeaders(),
+            );
+        }
+
+        if ($e instanceof TooManyRequestsHttpException) {
+            return apiresponse()->errorResponse(
+                ApiResponseService::HTTP_TOO_MANY_REQUESTS,
+                self::message('too_many_requests', 'Demasiadas peticiones'),
+                headers: $e->getHeaders(),
+            );
+        }
+
+        if ($e instanceof RouteNotFoundException) {
+            return apiresponse()->unauthorized(self::message('route_not_found', 'Token invalido o no enviado'));
+        }
+
+        if ($e instanceof AuthenticationException) {
+            return apiresponse()->unauthorized(self::message('authentication', 'Token de autorizacion requerido o invalido'));
+        }
+
+        if ($e instanceof AuthorizationException) {
+            return apiresponse()->forbidden(self::message('authorization', 'No autorizado para este recurso'));
+        }
+
+        if ($e instanceof MethodNotAllowedHttpException) {
+            return apiresponse()->errorResponse(
+                ApiResponseService::HTTP_METHOD_NOT_ALLOWED,
+                self::message('method_not_allowed', 'Metodo HTTP no permitido para esta ruta'),
+                headers: $e->getHeaders(),
+            );
+        }
+
+        if ($e instanceof ServiceUnavailableHttpException) {
+            return apiresponse()->errorResponse(
+                ApiResponseService::HTTP_SERVICE_UNAVAILABLE,
+                self::message('service_unavailable', 'El sistema se encuentra en mantenimiento'),
+                headers: $e->getHeaders(),
+            );
+        }
+
+        if ($e instanceof HttpExceptionInterface) {
+            $status = $e->getStatusCode();
+            $message = $e->getMessage();
+
+            if ($status >= 500) {
+                return apiresponse()->errorResponse(
+                    $status,
+                    self::message('server_error', 'Error interno del servidor'),
+                    headers: $e->getHeaders(),
+                );
+            }
+
+            return apiresponse()->errorResponse(
+                $status,
+                $message !== '' ? $message : self::message('client_error', 'Error en la solicitud'),
+                headers: $e->getHeaders(),
+            );
+        }
+
+        return null;
     }
 
     private static function shouldHandle(Request $request): bool

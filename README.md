@@ -259,18 +259,20 @@ Intercepta excepciones comunes y devuelve respuestas formateadas como:
 
 Las excepciones manejadas por defecto son:
 
-- AccessDeniedHttpException → 403 Forbidden
+- AccessDeniedHttpException → 403 Forbidden. Las denegaciones de gates y policies sin un código explícito usan `messages.authorization`.
 - NotFoundHttpException → 404 Not Found
 - TooManyRequestsHttpException → 429 Too Many Requests
 - RouteNotFoundException → 401 Unauthorized
 - AuthenticationException → 401 Unauthorized
 - AuthorizationException → 403 Forbidden
 - MethodNotAllowedHttpException → 405 Method Not Allowed
-- ValidationException → 422 Unprocessable Entity
+- ValidationException → 422 Unprocessable Entity por defecto. Se respeta el código configurado en la excepción. Si la excepción trae una respuesta explícita, Laravel conserva su manejo.
 - ServiceUnavailableHttpException → 503 Service Unavailable
 - HttpExceptionInterface (fallback) → respeta el status HTTP en rutas API; los mensajes 5xx se reemplazan por un mensaje seguro
 
 Los headers `Allow` (405) y `Retry-After` (429 y 503), así como los del fallback HTTP, se conservan en la respuesta JSON.
+
+En las respuestas de error que genera el paquete para solicitudes `HEAD`, el cuerpo queda vacío.
 
 Las rutas fuera de `api_patterns` y las excepciones que no figuran en esta lista siguen siendo manejadas por Laravel. Por ejemplo, una `RuntimeException` conserva el manejo de errores de la aplicación.
 

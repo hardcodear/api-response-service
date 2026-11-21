@@ -4,6 +4,10 @@ Este paquete usa versionado semántico. Los tags publicados son inmutables.
 
 ## Unreleased
 
+- Las respuestas de error para solicitudes `HEAD` tienen el cuerpo vacío.
+- Las denegaciones de gates y policies sin un código explícito aplican el mensaje configurable `messages.authorization`.
+- Las excepciones de validación respetan su código HTTP y permiten que Laravel gestione las respuestas explícitas.
+
 ## 2.0.1 — 2026-10-12
 
 - Instalación del paquete exportado en aplicaciones Laravel 12 y 13 nuevas dentro de CI.
